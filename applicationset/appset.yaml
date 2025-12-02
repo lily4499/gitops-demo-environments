@@ -4,7 +4,9 @@ metadata:
   name: gitops-demo-appset
   namespace: argocd
 spec:
-  goTemplate: true   # enable go-template expressions ({{ if ... }})
+  # Enable Go templating for fields like {{ .path.basename }}
+  goTemplate: true
+
   generators:
     - git:
         repoURL: https://github.com/lily4499/gitops-demo-environments.git
@@ -16,6 +18,7 @@ spec:
           - path: applicationset
             exclude: true
 
+  # Base template: common behavior for all environments
   template:
     metadata:
       name: "{{ .path.basename }}-gitops-demo"
@@ -27,32 +30,35 @@ spec:
         path: charts/gitops-demo-app
         helm:
           valueFiles:
-            - "../../{{ .path }}/values.yaml"
+            # Use the env folder's values.yaml (dev/values.yaml, prod/values.yaml, etc.)
+            - "../../{{ .path.basename }}/values.yaml"
       destination:
         server: https://kubernetes.default.svc
         namespace: "gitops-demo-{{ .path.basename }}"
+      syncPolicy:
+        # Default: manual sync, but still auto-create namespace
+        syncOptions:
+          - CreateNamespace=true
 
-      # ---- Sync policy per environment ----
-      {{- if eq .path.basename "dev" }}
+  # Conditional overrides per environment
+  templatePatch: |
+    {{- if eq .path.basename "dev" }}
+    spec:
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
-      {{- else }}
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
-      {{- end }}
+    {{- end }}
 
-      # ---- ignoreDifferences for PROD only (optional but useful) ----
-      {{- if eq .path.basename "prod" }}
+    {{- if eq .path.basename "prod" }}
+    spec:
       ignoreDifferences:
         - kind: Deployment
           jsonPointers:
             - /spec/replicas
-      {{- end }}
+    {{- end }}
 
 
 
@@ -102,9 +108,7 @@ spec:
 
 
 
-
-
-
+# #ApplicationSet that actually uses these patch files
 
 # apiVersion: argoproj.io/v1alpha1
 # kind: ApplicationSet
@@ -112,17 +116,26 @@ spec:
 #   name: gitops-demo-appset
 #   namespace: argocd
 # spec:
+#   goTemplate: true
+#   goTemplateOptions:
+#     - missingkey=error
+
+#   # 1) Generator: read per-env patch-sync.yaml files
 #   generators:
 #     - git:
 #         repoURL: https://github.com/lily4499/gitops-demo-environments.git
 #         revision: main
-#         directories:
-#           - path: dev
-#           - path: prod
+#         files:
+#           # This matches:
+#           #   dev/patch-sync.yaml
+#           #   prod/patch-sync.yaml
+#           - path: "*/patch-sync.yaml"
 
+#   # 2) Base template for each env
 #   template:
 #     metadata:
-#       name: "{{path.basename}}-gitops-demo"
+#       # .path.basename is "dev" or "prod"
+#       name: "{{ .path.basename }}-gitops-demo"
 #     spec:
 #       project: default
 #       source:
@@ -131,16 +144,44 @@ spec:
 #         path: charts/gitops-demo-app
 #         helm:
 #           valueFiles:
-#             - "{{path}}/values.yaml"
+#             # dev/values.yaml or prod/values.yaml
+#             - "../../{{ .path.basename }}/values.yaml"
 #       destination:
 #         server: https://kubernetes.default.svc
-#         namespace: "gitops-demo-{{path.basename}}"
+#         namespace: "gitops-demo-{{ .path.basename }}"
+
+#       # base syncPolicy – will be overridden by templatePatch below
+#       syncPolicy: {}
+
+#   # 3) Apply per-env sync behavior from patch-sync.yaml
+#   templatePatch: |
+#     # ---- Sync policy from patch-sync.yaml ----
+#     {{- if eq .sync.mode "automated" }}
+#     spec:
 #       syncPolicy:
 #         automated:
-#           prune: true
-#           selfHeal: true
+#           prune: {{ .sync.prune }}
+#           selfHeal: {{ .sync.selfHeal }}
 #         syncOptions:
 #           - CreateNamespace=true
+#     {{- else }}
+#     spec:
+#       # Manual sync: no 'automated' section, but still create namespaces
+#       syncPolicy:
+#         syncOptions:
+#           - CreateNamespace=true
+#     {{- end }}
+
+#     # ---- Optional ignoreDifferences per env ----
+#     {{- if .ignoreDifferences.replicas }}
+#     spec:
+#       ignoreDifferences:
+#         - group: apps
+#           kind: Deployment
+#           jsonPointers:
+#             - /spec/replicas
+#     {{- end }}
+
 
 
 
