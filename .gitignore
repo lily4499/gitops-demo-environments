@@ -1,0 +1,20 @@
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+*.swp
+*.tmp
+*~
+
+# Helm / kubectl local files (if you ever generate them)
+*.tgz
+
+# Terraform (if later you add terraform modules here)
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+crash.log
+*.tfvars

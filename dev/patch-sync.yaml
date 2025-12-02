@@ -1,0 +1,7 @@
+# Dev sync behavior (conceptual documentation)
+# In this project, Dev is configured as:
+# - auto-sync enabled
+# - prune + selfHeal true
+#
+# The actual syncPolicy for Dev is defined in the ApplicationSet template
+# (or could be applied as a patch if you extend your setup).

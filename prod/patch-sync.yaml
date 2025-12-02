@@ -1,0 +1,7 @@
+# Prod sync behavior (conceptual documentation)
+# In this project, Prod is expected to:
+# - use manual sync (no auto-sync) for safer rollouts
+# - optionally ignore certain diffs like /spec/replicas to avoid noisy drift
+#
+# The actual syncPolicy & ignoreDifferences must be configured in the
+# ApplicationSet or ArgoCD Application definition.

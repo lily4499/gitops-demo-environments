@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  repository: laly9999/gitops-demo-app
+  tag: "v1"
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30081

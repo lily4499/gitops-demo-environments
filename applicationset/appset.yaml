@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1   #Tells Kubernetes we’re creating an ArgoCD ApplicationSet object
+kind: ApplicationSet
+metadata:          #“Register” this ApplicationSet inside ArgoCD so it can manage apps.
+  name: gitops-demo-appset
+  namespace: argocd
+spec:             #Automatically discover environments by folder name, without hardcoding them. generator will create one app for dev and one for prod.
+  generators:
+    - git:
+        repoURL: https://github.com/lily4499/gitops-demo-environments.git
+        revision: main
+        directories:
+          - path: "*"
+            exclude:      
+              - charts
+              - applicationset
+
+  template:
+    metadata:   #Have one ArgoCD Application per environment with a clear, unique name.
+      name: "{{path.basename}}-gitops-demo" #This is replaced by the folder name from the generator:
+    spec:
+      project: default     #ArgoCD groups applications into “projects”.Here you put them all in the default project.
+      source:
+        repoURL: https://github.com/lily4499/gitops-demo-environments.git
+        targetRevision: main
+        path: charts/gitops-demo-app  #So The generator looks at folders dev/ and prod/.But each Application deploys using the Helm chart at charts/gitops-demo-app.
+        helm:
+          valueFiles:
+            - "{{path}}/values.yaml"   #Helm will effectively use: charts/gitops-demo-app/values.yaml, dev/values.yaml or charts/gitops-demo-app/values.yaml,  prod/values.yaml  
+      destination:
+        server: https://kubernetes.default.svc  #Deploy to the same cluster where ArgoCD is running
+        namespace: "gitops-demo-{{path.basename}}"  #Each environment gets its own namespace, fully isolated.
+      syncPolicy:
+        automated:
+          prune: true   #If you delete something from Git (e.g. a Deployment), ArgoCD will delete it from the cluster too.
+          selfHeal: true  # If someone changes something manually in the cluster (e.g. edits replicas), ArgoCD will revert it back to what Git says.
+        syncOptions:
+          - CreateNamespace=true  #If gitops-demo-dev or gitops-demo-prod namespace doesn’t exist yet, ArgoCD will create it automatically.
