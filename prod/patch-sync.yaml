@@ -5,3 +5,16 @@
 #
 # The actual syncPolicy & ignoreDifferences must be configured in the
 # ApplicationSet or ArgoCD Application definition.
+
+
+# # prod/patch-sync.yaml
+# env: prod
+
+# sync:
+#   mode: manual      # no auto-sync for prod
+#   prune: false
+#   selfHeal: false
+
+# ignoreDifferences:
+#   replicas: true    # ignore Deployment replica drift in prod
+

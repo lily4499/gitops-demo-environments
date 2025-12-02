@@ -154,17 +154,19 @@ git push
 ---
 
 ## Step 7 – Create ApplicationSet
->🔁 Big-picture summary
 
->This ApplicationSet:
->Watches your gitops-demo-environments repo.
->Automatically finds folders like dev/ and prod/.
->For each one, it:
-  >Creates an ArgoCD Application with a unique name.
-  >Uses the same Helm chart (charts/gitops-demo-app).
-  >Uses that env’s values.yaml file.
-  >Deploys into a dedicated namespace (gitops-demo-dev, gitops-demo-prod).
-  >Keeps things in sync automatically (unless customized by patches).
+>What this does
+  >Base template
+      >All apps (dev, prod, staging…)  
+      >Use the same Helm chart at charts/gitops-demo-app
+      >Use ../../<env>/values.yaml for that environment
+      >Deploy to namespace gitops-demo-<env>
+      >Have manual sync by default, with CreateNamespace=true.
+  >templatePatch logic
+    >If folder name is dev:
+        >Override syncPolicy → turn auto-sync ON (prune + self-heal).
+    >If folder name is prod:
+        >Add ignoreDifferences for /spec/replicas so Prod doesn’t constantly show drift if you scale manually/HPA.
 
 ```bash
 # Create folder for ApplicationSet
@@ -207,10 +209,10 @@ kubectl get svc -n gitops-demo-dev
 kubectl get svc -n gitops-demo-prod
 
 # If using Minikube, get Dev URL
-minikube service -n gitops-demo-dev gitops-demo-app --url
+minikube service -n gitops-demo-dev dev-gitops-demo-gitops-demo-app --url
 
 # If using Minikube, get Prod URL
-minikube service -n gitops-demo-prod gitops-demo-app --url
+minikube service -n gitops-demo-prod prod-gitops-demo-gitops-demo-app --url
 ```
 
 ---
@@ -248,6 +250,8 @@ argocd app get dev-gitops-demo
 
 # (Optional) Force refresh
 argocd app sync dev-gitops-demo
+
+argocd app history dev-gitops-demo
 
 # Verify Dev pods
 kubectl get pods -n gitops-demo-dev

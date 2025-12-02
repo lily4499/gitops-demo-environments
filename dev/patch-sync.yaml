@@ -5,3 +5,15 @@
 #
 # The actual syncPolicy for Dev is defined in the ApplicationSet template
 # (or could be applied as a patch if you extend your setup).
+
+
+# # dev/patch-sync.yaml
+# env: dev
+
+# sync:
+#   mode: automated
+#   prune: true
+#   selfHeal: true
+
+# ignoreDifferences:
+#   replicas: false
