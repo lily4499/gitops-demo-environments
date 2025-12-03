@@ -372,5 +372,23 @@ kubectl logs <POD_NAME> -n <NAMESPACE>
 
 ---
 
-```
+
+### ❓“What was the most challenging part?”
+
+> “The most challenging part was getting ArgoCD ApplicationSet working exactly how I wanted for multiple environments.
+>
+> I had to understand how the git **directories generator** works — how it maps each folder to an Application — and then make sure the template pointed to the Helm chart path while still loading env-specific `values.yaml` files.
+> I also needed to think about **sync policy**: Dev should auto-sync, but Prod must be manual. That forced me to think like production: where do we allow automation and where do we require human approval.”
+
+---
+
+---
+
+
+
+
+
+
+
+
 
